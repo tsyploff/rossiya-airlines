@@ -142,7 +142,8 @@ def read_delta(data=pd.read_excel('ID.xls'), crew=pd.read_json('crew.json')):
     u2 = test2.reshape(M,len(U),K)
     
     # 3 критерий delta
-    u3 = np.zeros((M,1,K))
+    # u3 = np.zeros((M,1,K))
+    u3 = np.tile(F['night'].values.reshape(-1,1), K).reshape(M, 1, K)
     
     # 4 критерий delta
     test4 = np.array([int(F.iloc[m]['v']==j) for m,j,k in all_permutations_m_j_k])
