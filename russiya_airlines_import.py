@@ -2,6 +2,7 @@ import air_modules as am
 import numpy as np
 import pandas as pd
 import itertools
+from sklearn.preprocessing import OneHotEncoder
 
 def preprocess(data):
     
@@ -25,6 +26,11 @@ def preprocess(data):
     F['s'] = F['s'].apply(lambda x: int(x.split()[1]))
     
     return F
+
+def fit_transform(F, ser, K):
+        ft_OH = OneHotEncoder().fit_transform(F[ser].values.reshape(-1,1)).toarray()
+        res = np.tile(ft_OH.reshape(-1,1), K).reshape(F.shape[0], len(pd.unique(F[ser])) , K)
+        return res
 
 def read_ideal_values(data=pd.read_excel('ID.xls'), crew=pd.read_json('crew.json')):
     '''На вход принимает информацию о связках и книгах,
@@ -126,41 +132,30 @@ def read_delta(data=pd.read_excel('ID.xls'), crew=pd.read_json('crew.json')):
     l = np.arange(len(L)) + 1
     s = np.arange(len(R)) + 1
     me = np.arange(M)
-    
-    all_permutations_m_j_k = list(itertools.product(me, j, k))
-    all_permutations_m_t_k = list(itertools.product(me, t, k))
-    all_permutations_m_l_k = list(itertools.product(me, l, k))
-    all_permutations_m_s_k = list(itertools.product(me, s, k))
-    
+        
     # 1 критерий delta
-    test1 = np.array([(F.iloc[m]['t']*F.iloc[m]['p']*int(F.iloc[m]['v']==j) / crew.iloc[j-1][k]) for m, j, k in all_permutations_m_j_k])
-    u1 = test1.reshape(M,len(U),K)
+    test1 = fit_transform(F, 'v', K)
+    u1 = test1*F['t'].values.reshape(M, 1, 1)*F['p'].values.reshape(M, 1, 1) / crew.values.reshape(1, len(U), K)
     
     # 2 критерий delta
-    test2 = np.array([(F.iloc[m]['t']*F.iloc[m]['p']*int(F.iloc[m]['v']==j)*int(F.iloc[m]['night']==1) / crew.iloc[j-1][k]) \
-                      for m,j,k in all_permutations_m_j_k])
-    u2 = test2.reshape(M,len(U),K)
+    u2 = test1*F['t'].values.reshape(M, 1, 1)*F['p'].values.reshape(M, 1, 1)*\
+        F['night'].values.reshape(M, 1, 1) / crew.values.reshape(1, len(U), K)
     
     # 3 критерий delta
-    # u3 = np.zeros((M,1,K))
     u3 = np.tile(F['night'].values.reshape(-1,1), K).reshape(M, 1, K)
     
     # 4 критерий delta
-    test4 = np.array([int(F.iloc[m]['v']==j) for m,j,k in all_permutations_m_j_k])
-    u4 = test4.reshape(M, len(U), K)
+    u4 = test1
     
     # 5 критерий delta
-    test5 = np.array([int(F.iloc[m]['d'] == t) / K for m,t,k in all_permutations_m_t_k])
-    u5 = test5.reshape(M, len(T), K)
+    u5 = fit_transform(F, 'd', K)
     
     # 6 критерий delta
-    test6 = np.array([int(F.iloc[m]['a'] == l) / K for m,l,k in all_permutations_m_l_k])
-    u6 = test6.reshape(M, len(L), K)
+    u6 = fit_transform(F, 'a', K)
     
     # 7 критерий delta
-    test7 = np.array([int(F.iloc[m]['s'] == s) / K for m,s,k in  all_permutations_m_s_k])
-    u7 = test7.reshape(M, len(R), K)
-    
+    u7 = fit_transform(F, 's', K)
+        
     # delta
     delta = np.concatenate([u1, u2, u3, u4, u5, u6, u7], axis=1)
     
@@ -172,12 +167,3 @@ def read_delta(data=pd.read_excel('ID.xls'), crew=pd.read_json('crew.json')):
 if __name__ == '__main__':
     ideal = read_ideal_values()
     delta = read_delta()
-
-
-    
-
-
-
-
-
-
