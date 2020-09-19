@@ -10,46 +10,6 @@ def obfective_function(weights, ideal, real):
     else:
         return np.sum((1 - real/ideal)**2, axis=1).dot(weights)
 
-def algorithm_A1_step(M, N, K, delta, weights, ideal, real, distributed, undistributed):
-    '''Совершает один шаг алгоритма А1'''
-    best_f, best_k = undistributed[0], 0
-    zero = np.zeros((N, K))
-    zero[:, best_k] = delta[best_f, :, best_k]
-    best_real = real + zero
-    best_value = obfective_function(weights, ideal, best_real)
-
-    for k in range(K):
-        for f in undistributed:
-            zero = np.zeros((N, K))
-            zero[:, k] = delta[f, :, k]
-            try_real = real + zero
-            try_value = obfective_function(weights, ideal, try_real)
-            if try_value <= best_value:
-                best_f, best_k = f, k
-                best_real = try_real
-                best_value = try_value
-                
-    distributed[best_k].append(best_f)
-    undistributed = undistributed[undistributed != best_f]
-
-    return best_real, distributed, undistributed
-
-def algorithm_A1__(delta, weights, ideal):
-    '''Ищет распределение связок по книгам с перебором по всем оставшимся парам (k, f)'''
-    M, N, K = delta.shape
-    real = np.zeros((N, K))
-    undist = np.arange(M)
-    dist = [[] for k in range(K)]
-
-    for step in range(1, M + 1):
-        print('_', end='')
-        real, dist, undist = algorithm_A1_step(M, N, K, delta, weights, ideal, real, dist, undist)
-        if step % 100 == 0:
-            print('\nШаг #{}'.format(step), 
-                  '\nТекущее значение целевой функции:\t{:.2f}'.format(obfective_function(weights, ideal, real)))
-
-    return dist
-
 def algorithm_A1(delta, weights, ideal):
     '''Ищет распределение связок по книгам с перебором по всем оставшимся парам (k, f)'''
     duration = time() #время начало
@@ -89,3 +49,35 @@ def algorithm_A1(delta, weights, ideal):
             
     print('\nВремя работы функции:\t{:.4f} сек'.format(time() - duration))
     return dist
+
+def algorithm_A2(delta, weights, ideal):
+    '''Ищет распределение связок по книгам с перебором по всем оставшимся парам (k, f)'''
+    duration = time() #время начало
+    M, N, K = delta.shape #размерность задачи
+    real = np.zeros((N, K)) #начальные значения игреков
+    f = 0
+    dist = [[] for k in range(K)] #распределение связок по книгам
+
+    for step in range(1, M + 1):
+        best_k = 0 
+        zero = np.zeros((N, K))
+        zero[:, best_k] = delta[f, :, best_k]
+        best_real = real + zero
+        best_value = obfective_function(weights, ideal, best_real)
+    
+        for k in range(K):
+            zero = np.zeros((N, K))
+            zero[:, k] = delta[f, :, k]
+            try_real = real + zero
+            try_value = obfective_function(weights, ideal, try_real)
+            if try_value <= best_value:
+                best_k = k
+                best_real = try_real
+                best_value = try_value
+                    
+        dist[best_k].append(f)
+        real = best_real
+        f += 1
+            
+    print('Время работы функции:\t{:.4f} сек'.format(time() - duration))
+    return best_value, dist
