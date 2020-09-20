@@ -148,13 +148,13 @@ def read_delta(data, crew):
     u4 = test1
     
     # 5 критерий delta
-    u5 = fit_transform(F, 'd', K)
+    u5 = fit_transform(F, 'd', K) / K
     
     # 6 критерий delta
-    u6 = fit_transform(F, 'a', K)
+    u6 = fit_transform(F, 'a', K) / K
     
     # 7 критерий delta
-    u7 = fit_transform(F, 's', K)
+    u7 = fit_transform(F, 's', K) / K
         
     # delta
     delta = np.concatenate([u1, u2, u3, u4, u5, u6, u7], axis=1)
