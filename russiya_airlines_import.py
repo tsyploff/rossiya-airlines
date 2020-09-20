@@ -3,6 +3,17 @@ import numpy as np
 import pandas as pd
 import itertools
 from sklearn.preprocessing import OneHotEncoder
+import json
+
+
+def load_tester(path):
+    '''
+    на вход подаётся path_to_file/file_name.json,
+    на выходе - данные, преобразованные в np.ndarray
+    '''
+    with open(path) as f:
+        data = json.load(f)
+    return np.asarray(data)
 
 def preprocess(data):
     
@@ -28,9 +39,13 @@ def preprocess(data):
     return F
 
 def fit_transform(F, ser, K):
-        ft_OH = OneHotEncoder().fit_transform(F[ser].values.reshape(-1,1)).toarray()
-        res = np.tile(ft_OH.reshape(-1,1), K).reshape(F.shape[0], len(pd.unique(F[ser])) , K)
-        return res
+    '''
+    на вход принимается информация о связках, книгах и столбце,
+    возвращает OneHotEncoder матрицу по данном столбцу
+    '''
+    ft_OH = OneHotEncoder().fit_transform(F[ser].values.reshape(-1,1)).toarray()
+    res = np.tile(ft_OH.reshape(-1,1), K).reshape(F.shape[0], len(pd.unique(F[ser])) , K)
+    return res
 
 def read_ideal_values(data, crew):
     '''На вход принимает информацию о связках и книгах,
@@ -125,13 +140,6 @@ def read_delta(data, crew):
     T = sorted(pd.unique(F['d'])) # множество дней горизонта планирования
     U = sorted(pd.unique(F['v'])) # тип сообщения
     N = 10 + len(T) + len(L) + len(R) # размерность вектора
-    
-    j = np.arange(len(U)) + 1
-    k = np.arange(K) + 1
-    t = np.arange(len(T)) + 1
-    l = np.arange(len(L)) + 1
-    s = np.arange(len(R)) + 1
-    me = np.arange(M)
         
     # 1 критерий delta
     test1 = fit_transform(F, 'v', K)
@@ -164,6 +172,10 @@ def read_delta(data, crew):
     
     return delta
 
+
 if __name__ == '__main__':
+    #data = pd.read_excel('ID.xls')
+    #crew = pd.read_json('crew.json')
+    # previous_delta = load_tester('delta.json')
     ideal = read_ideal_values()
     delta = read_delta()
