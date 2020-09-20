@@ -32,7 +32,7 @@ def fit_transform(F, ser, K):
         res = np.tile(ft_OH.reshape(-1,1), K).reshape(F.shape[0], len(pd.unique(F[ser])) , K)
         return res
 
-def read_ideal_values(data=pd.read_excel('ID.xls'), crew=pd.read_json('crew.json')):
+def read_ideal_values(data, crew):
     '''На вход принимает информацию о связках и книгах,
     возвращает матрицу np.array идеальных значений
     >>> ideals = read_ideal_values(data, crew)
@@ -107,7 +107,7 @@ def read_ideal_values(data=pd.read_excel('ID.xls'), crew=pd.read_json('crew.json
     
     return ideals
 
-def read_delta(data=pd.read_excel('ID.xls'), crew=pd.read_json('crew.json')): 
+def read_delta(data, crew): 
     '''На вход принимает информацию о связках и книгах, 
     возвращает тензор дельта большое 
     >>> delta = read_ideal_values(data, crew)
