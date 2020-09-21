@@ -100,14 +100,43 @@ def sort_function_2(delta):
     undist = np.arange(delta.shape[0] + 1)
     return undist, delta
 
-def to_expert_format(solution):
-    return solution
+def to_expert_format(data, solution):
+    '''Приводит решение к формату Expert.xls'''
+    result = pd.DataFrame(columns=['Связка', 'Вылет', 'Тип'] + [str(day) for day in data['День месяца'].unique()])
+    result.loc[0] = np.array([np.NaN, np.NaN, 'ВС', 'СБ ', 'ВС ', 
+                              'ПН ', 'ВТ ', 'СР ', 'ЧТ ', 'ПТ ', 
+                              'СБ ', 'ВС ', 'ПН ', 'ВТ ', 'СР ', 
+                              'ЧТ ', 'ПТ ', 'СБ ', 'ВС ', 'ПН ', 
+                              'ВТ ', 'СР ', 'ЧТ ', 'ПТ ', 'СБ ', 
+                              'ВС ', 'ПН ', 'ВТ ', 'СР ', 'ЧТ ', 
+                              'ПТ ', 'СБ ', 'ВС ', 'ПН '])
+    
+    table = data[['День месяца', 'Время вылета', 'Связка', 'Тип судна']].copy()
+    table['Рабочий стол'] = np.zeros(len(table), dtype='int64')
+    for book in range(len(solution)):
+        for i in solution[book]:
+            table.loc[i, 'Рабочий стол'] = book
+    
+    indexes = table.groupby(by=['Время вылета', 'Связка', 'Тип судна']).count().index
+    
+    for i in range(len(indexes)):
+        result.loc[i + 1, 'Связка'] = indexes[i][1]
+        result.loc[i + 1, 'Вылет'] = indexes[i][0]
+        result.loc[i + 1, 'Тип'] = indexes[i][2]
+        subtable = table[np.all(table[['Время вылета', 'Связка', 'Тип судна']] == indexes[i], axis=1)]
+        for row in range(len(subtable)):
+            result.loc[i + 1, str(subtable.iloc[row]['День месяца'])] = subtable.iloc[row]['Рабочий стол']
+
+    return result
+
 
 class Solver():
 
     count = 0
 
     solutions = {}
+
+    formated_solutions = {}
     
     specifications = {}
     
@@ -139,7 +168,8 @@ class Solver():
         Solver.count += 1
         duration = time()
         if self.algorithm == 'A1':
-            Solver.solutions[Solver.count] = to_expert_format(algorithm_A1(self.delta, weights, self.ideal))
+            Solver.solutions[Solver.count] = algorithm_A1(self.delta, weights, self.ideal)
+            Solver.formated_solutions[Solver.count] = to_expert_format(self.data, Solver.solutions[Solver.count][1])
             Solver.specifications[Solver.count] = {
                 'Веса критериев' : weights, 
                 'Алгоритм' : 'A1', 
@@ -147,7 +177,8 @@ class Solver():
                 'Время работы (сек)' : time() - duration
             }
         else:
-            Solver.solutions[Solver.count] = to_expert_format(algorithm_A2(self.delta, weights, self.ideal, sort_function=Solver.sorts[self.sort]))
+            Solver.solutions[Solver.count] = algorithm_A2(self.delta, weights, self.ideal, sort_function=Solver.sorts[self.sort])
+            Solver.formated_solutions[Solver.count] = to_expert_format(self.data, Solver.solutions[Solver.count][1])
             Solver.specifications[Solver.count] = {
                 'Веса критериев' : weights, 
                 'Алгоритм' : 'A2', 
@@ -155,5 +186,6 @@ class Solver():
                 'Время работы (сек)' : time() - duration
             }
         return '''\nРешение записано в Solver.solutions;
+Решение приведённое к формату Expert.xls записано в Solver.formated_solutions;
 Спецификации решения сохранены в Solver.specifications;
 Идентификатор решения: {}'''.format(Solver.count)
