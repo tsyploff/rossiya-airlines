@@ -59,7 +59,7 @@ def algorithm_A2(unsorted_delta, weights, ideal, sort_function='None'):
     if type(sort_function) == str:
         undist, delta = np.arange(unsorted_delta.shape[0] + 1), unsorted_delta
     else:
-        undist, delta = sort_function(unsorted_delta)
+        undist, delta = sort_function(unsorted_delta, ideal)
     
     duration = time() #время начала
     M, N, K = delta.shape #размерность задачи
@@ -92,12 +92,32 @@ def algorithm_A2(unsorted_delta, weights, ideal, sort_function='None'):
     print('Время работы функции:\t{:.4f} сек'.format(time() - duration))
     return obfective_function(weights, ideal, real), dist
 
-def sort_function_1(delta):
-    undist = np.arange(delta.shape[0] + 1)
+def sort_function_1(delta0, ideal0):
+    '''Сортировка по коэффициенту Отиаи'''
+    ideal = ideal0.reshape(1, -1)
+    ideal = ideal[0]
+    M, N, K = delta0.shape
+    delta = delta0.reshape(M, -1)
+    unsorted = pd.DataFrame()
+    unsorted['Коэффициент Отиаи'] = delta.dot(ideal) / np.linalg.norm(delta, axis=1) / np.linalg.norm(ideal)
+    undist = unsorted.sort_values(by=['Коэффициент Отиаи']).index.values
+    delta = delta.reshape(M, N, K)
+    delta = delta[undist]
+    undist = np.hstack((undist, -np.ones(1, dtype='int64')))
     return undist, delta
 
-def sort_function_2(delta):
-    undist = np.arange(delta.shape[0] + 1)
+def sort_function_2(delta0, ideal0):
+    ideal = ideal0.reshape(1, -1)
+    ideal = ideal[0]
+    M, N, K = delta0.shape
+    delta = delta0.reshape(M, -1)
+    delta /= np.linalg.norm(delta, axis=1).reshape(-1, 1)
+    unsorted = pd.DataFrame()
+    unsorted['Нормированное расстояние'] = np.linalg.norm(delta - ideal/np.linalg.norm(ideal), axis=1)
+    undist = unsorted.sort_values(by=['Нормированное расстояние']).index.values
+    delta = delta.reshape(M, N, K)
+    delta = delta[undist]
+    undist = np.hstack((undist, -np.ones(1, dtype='int64')))
     return undist, delta
 
 def to_expert_format(data, solution):
@@ -169,22 +189,22 @@ class Solver():
         duration = time()
         if self.algorithm == 'A1':
             Solver.solutions[Solver.count] = algorithm_A1(self.delta, weights, self.ideal)
-            Solver.formated_solutions[Solver.count] = to_expert_format(self.data, Solver.solutions[Solver.count][1])
             Solver.specifications[Solver.count] = {
                 'Веса критериев' : weights, 
                 'Алгоритм' : 'A1', 
                 'Сортировка' : Solver.sorts[self.sort], 
                 'Время работы (сек)' : time() - duration
             }
+            Solver.formated_solutions[Solver.count] = to_expert_format(self.data, Solver.solutions[Solver.count][1])
         else:
             Solver.solutions[Solver.count] = algorithm_A2(self.delta, weights, self.ideal, sort_function=Solver.sorts[self.sort])
-            Solver.formated_solutions[Solver.count] = to_expert_format(self.data, Solver.solutions[Solver.count][1])
             Solver.specifications[Solver.count] = {
                 'Веса критериев' : weights, 
                 'Алгоритм' : 'A2', 
                 'Сортировка' : Solver.sorts[self.sort], 
                 'Время работы (сек)' : time() - duration
             }
+            Solver.formated_solutions[Solver.count] = to_expert_format(self.data, Solver.solutions[Solver.count][1])
         return '''\nРешение записано в Solver.solutions;
 Решение приведённое к формату Expert.xls записано в Solver.formated_solutions;
 Спецификации решения сохранены в Solver.specifications;
