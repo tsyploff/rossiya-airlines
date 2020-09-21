@@ -2,11 +2,15 @@ import numpy as np
 import pandas as pd 
 from time import time
 from russiya_airlines_import import read_ideal_values, read_delta
-from russiya_airlines_interface import solver_setting
+from russiya_airlines_interface import solver_setting, weights_setting
 
 def obfective_function(weights, ideal, real):
-    '''Возвращает значение целевой функции'''
-    return np.sum((1 - real/(ideal + 10**(-8)))**2, axis=1).dot(weights)
+    '''Возвращает значение целевой функции MAPE'''
+    return np.sum((1 - (real + 1)/(ideal + 1))**2, axis=1).dot(weights)
+    
+def weighted_mean_square(weights, ideal, real):
+    '''Возвращает значение целевой функции MSE'''
+    return np.sum((real - ideal)**2, axis=1).dot(weights)
 
 def algorithm_A1(delta, weights, ideal):
     '''Ищет распределение связок по книгам с перебором по всем оставшимся парам (k, f)'''
@@ -16,6 +20,7 @@ def algorithm_A1(delta, weights, ideal):
     undist = np.arange(M) #индексы нераспределённых связок
     dist = [[] for k in range(K)] #распределение связок по книгам
 
+    print('Алгоритм сделает {} итераций.\n'.format(M))
     for step in range(1, M + 1):
         print('_', end='') #линия загрузки
 
@@ -23,14 +28,14 @@ def algorithm_A1(delta, weights, ideal):
         zero = np.zeros((N, K))
         zero[:, best_k] = delta[best_f, :, best_k]
         best_real = real + zero
-        best_value = obfective_function(weights, ideal, best_real)
+        best_value = weighted_mean_square(weights, ideal, best_real)
     
         for k in range(K):
             for f in undist:
                 zero = np.zeros((N, K))
                 zero[:, k] = delta[f, :, k]
                 try_real = real + zero
-                try_value = obfective_function(weights, ideal, try_real)
+                try_value = weighted_mean_square(weights, ideal, try_real)
                 if try_value <= best_value:
                     best_f, best_k = f, k
                     best_real = try_real
@@ -42,16 +47,16 @@ def algorithm_A1(delta, weights, ideal):
 
         if step % 100 == 0:
             print('\nШаг #{}'.format(step), 
-                  '\nТекущее значение целевой функции:\t{:.2f}'.format(best_value),
+                  '\nТекущее значение целевой функции:\t{:.2f}'.format(obfective_function(weights, ideal, real)),
                   '\nПрошло времени:\t{:.2f} сек'.format(time() - duration))
             
     print('\nВремя работы функции:\t{:.4f} сек'.format(time() - duration))
-    return dist
+    return obfective_function(weights, ideal, real), dist
 
-def algorithm_A2(unsorted_delta, weights, ideal, sort_function=np.nan):
+def algorithm_A2(unsorted_delta, weights, ideal, sort_function='None'):
     '''Ищет распределение связок по книгам с перебором по всем k'''
 
-    if np.isnan(sort_function):
+    if type(sort_function) == str:
         undist, delta = np.arange(unsorted_delta.shape[0] + 1), unsorted_delta
     else:
         undist, delta = sort_function(unsorted_delta)
@@ -67,13 +72,13 @@ def algorithm_A2(unsorted_delta, weights, ideal, sort_function=np.nan):
         zero = np.zeros((N, K))
         zero[:, best_k] = delta[f, :, best_k]
         best_real = real + zero
-        best_value = obfective_function(weights, ideal, best_real)
+        best_value = weighted_mean_square(weights, ideal, best_real)
     
         for k in range(K):
             zero = np.zeros((N, K))
             zero[:, k] = delta[f, :, k]
             try_real = real + zero
-            try_value = obfective_function(weights, ideal, try_real)
+            try_value = weighted_mean_square(weights, ideal, try_real)
             if try_value <= best_value:
                 best_k = k
                 best_real = try_real
@@ -85,14 +90,18 @@ def algorithm_A2(unsorted_delta, weights, ideal, sort_function=np.nan):
         f = undist[0]
             
     print('Время работы функции:\t{:.4f} сек'.format(time() - duration))
-    return best_value, dist
+    return obfective_function(weights, ideal, real), dist
 
 def sort_function_1(delta):
-    return delta
+    undist = np.arange(delta.shape[0] + 1)
+    return undist, delta
 
 def sort_function_2(delta):
-    return delta
+    undist = np.arange(delta.shape[0] + 1)
+    return undist, delta
 
+def to_expert_format(solution):
+    return solution
 
 class Solver():
 
@@ -118,13 +127,19 @@ class Solver():
             self.ideal = ideal
         self.algorithm = 'A1'
         self.sort = 'S1'
+        self.data = data
+        self.crew = crew
+        self.R = data['Назначение'].unique().shape[0]
+        self.L = data['Тип судна'].unique().shape[0]
+        self.T = data['День месяца'].unique().shape[0]
 
     def solve(self, weights=np.ones(94)/94):
-        self.algorithm, self.sort = solver_setting(self.algorithm, self.sort)
+        self.algorithm, self.sort = solver_setting()
+        weights = weights_setting(self.T, self.L, self.R)
         Solver.count += 1
         duration = time()
         if self.algorithm == 'A1':
-            Solver.solutions[Solver.count] = algorithm_A1(self.delta, weights, self.ideal)
+            Solver.solutions[Solver.count] = to_expert_format(algorithm_A1(self.delta, weights, self.ideal))
             Solver.specifications[Solver.count] = {
                 'Веса критериев' : weights, 
                 'Алгоритм' : 'A1', 
@@ -132,7 +147,7 @@ class Solver():
                 'Время работы (сек)' : time() - duration
             }
         else:
-            Solver.solutions[Solver.count] = algorithm_A2(self.delta, weights, self.ideal)
+            Solver.solutions[Solver.count] = to_expert_format(algorithm_A2(self.delta, weights, self.ideal, sort_function=Solver.sorts[self.sort]))
             Solver.specifications[Solver.count] = {
                 'Веса критериев' : weights, 
                 'Алгоритм' : 'A2', 
