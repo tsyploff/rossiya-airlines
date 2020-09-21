@@ -28,14 +28,14 @@ def algorithm_A1(delta, weights, ideal):
         zero = np.zeros((N, K))
         zero[:, best_k] = delta[best_f, :, best_k]
         best_real = real + zero
-        best_value = weighted_mean_square(weights, ideal, best_real)
+        best_value = obfective_function(weights, ideal, best_real)
     
         for k in range(K):
             for f in undist:
                 zero = np.zeros((N, K))
                 zero[:, k] = delta[f, :, k]
                 try_real = real + zero
-                try_value = weighted_mean_square(weights, ideal, try_real)
+                try_value = obfective_function(weights, ideal, try_real)
                 if try_value <= best_value:
                     best_f, best_k = f, k
                     best_real = try_real
@@ -72,13 +72,13 @@ def algorithm_A2(unsorted_delta, weights, ideal, sort_function='None'):
         zero = np.zeros((N, K))
         zero[:, best_k] = delta[f, :, best_k]
         best_real = real + zero
-        best_value = weighted_mean_square(weights, ideal, best_real)
+        best_value = obfective_function(weights, ideal, best_real)
     
         for k in range(K):
             zero = np.zeros((N, K))
             zero[:, k] = delta[f, :, k]
             try_real = real + zero
-            try_value = weighted_mean_square(weights, ideal, try_real)
+            try_value = obfective_function(weights, ideal, try_real)
             if try_value <= best_value:
                 best_k = k
                 best_real = try_real
