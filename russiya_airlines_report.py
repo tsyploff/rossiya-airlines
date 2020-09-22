@@ -290,22 +290,19 @@ def export_tables(title, tables):
     pass
 
 def solution_report(solution, specification):
-    '''Принимает на вход решение в виде pd.DataFrame, 
-    строит все таблицы и экспортирует их в эксель с названием 
+    t1 = table_round_trip(solution)
     
-    "Решение ({}, {}, {}).xlsx".format(specification['Алгоритм'], specification['Сортировка'], specification['Веса критериев'])
-
-    Если такой файл уже существует, в конце добавляется (1). Если уже существует файл с названием 
-    "Решение ({}, {}, {}) (k).xlsx".format(...)
-
-    в конце добавляется (k + 1)
-    file_name = ["Решение ({}, {}, {}).xlsx".format(specification['Алгоритм'], specification['Сортировка'], specification['Веса критериев'])]''' t1 = table_round_trip(solution)
-    t1.to_excel(file_name, sheet = 'Таблица 1')
     t2 = table_flight_time(solution)
-    t2.to_excel(file_name, sheet = 'Таблица 2')
+    
     t3 = table_flight_on_direction(solution)
-    t3.to_excel(file_name, sheet = 'Таблица 3')
+    
     t4 = table_flight_on_date(solution)
-    t4.to_excel(file_name, sheet = 'Таблица 4')
+    
     t5 = table_flight_on_plane(solution)
-    t5.to_excel(file_name, sheet = 'Таблица 5')
+    
+    with pd.ExcelWriter(file_name + '.xlsx') as writer: 
+        t1.to_excel(writer, sheet_name = 'Таблица 1')
+        t2.to_excel(writer, sheet_name = 'Таблица 2')
+        t3.to_excel(writer, sheet_name = 'Таблица 3')
+        t4.to_excel(writer, sheet_name = 'Таблица 4')
+        t5.to_excel(writer, sheet_name = 'Таблица 5')
