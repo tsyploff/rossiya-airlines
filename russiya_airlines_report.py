@@ -2,7 +2,21 @@ import os
 
 import numpy as np
 import pandas as pd
-from air_modules import*
+
+from air_modules import *
+
+#вспомогательные функции
+
+def is_night_flight(flight): # Является ли связка ночной
+    start = flight['Время вылета'].iloc[0]
+    duration = flight['Налет'].iloc[0]
+    n_pc = night_percent(start, duration)
+    if n_pc > 0.5:
+        return True
+    else:
+        return False
+
+#основные функции
 
 def table_round_trip(solution, data):
     '''Принимает на вход решение в виде pd.DataFrame, 
@@ -224,3 +238,4 @@ def solution_report(solution, data):
         t3.to_excel(writer, sheet_name = 'Таблица 3')
         t4.to_excel(writer, sheet_name = 'Таблица 4')
         t5.to_excel(writer, sheet_name = 'Таблица 5')
+

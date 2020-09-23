@@ -5,6 +5,14 @@ import itertools
 from sklearn.preprocessing import OneHotEncoder
 import json
 
+def is_night_flight(flight): # Является ли связка ночной
+    start = flight['Время вылета']
+    duration = flight['Налет']
+    n_pc = night_percent(start, duration)
+    if n_pc > 0.5:
+        return True
+    else:
+        return False
 
 def load_tester(path):
     '''
