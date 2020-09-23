@@ -129,3 +129,23 @@ def data_setting():
     mainloop()
 
     return data, crew
+
+def solution_import():
+    global data, data_file
+    root = Tk()
+    
+    data_label = Label(root, text='Выберите файл с примером решения: ')
+    data_label.pack()
+
+    data_button = Button(root, text='Открыть', command=get_data)
+    data_button.pack()
+
+    data_file = Label(root, text='')
+    data_file.pack()
+       
+    exit_button = Button(root, text='Готово', command=root.destroy)
+    exit_button.pack()
+    
+    mainloop()
+
+    return data.iloc[1:] #Так надо делать с нашими данными из-за французской нумерации
