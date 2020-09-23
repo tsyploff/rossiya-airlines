@@ -1,4 +1,4 @@
-Ссылка на репозиторий: [>>>](https://github.com/tsyploff/rossiya-airlines)
+Ссылка на репозиторий: [>>](https://github.com/tsyploff/rossiya-airlines)
 
 # Задание:
 
@@ -16,14 +16,14 @@
 
 ## Реальное разбиение:
 
-aptmess: формирование тензора приращений и расчёт идеальных значений
+[aptmess](https://github.com/aptmess): формирование тензора приращений и расчёт идеальных значений
 
-tsyploff: реализация эвристических алгоритмов, частично пользовательский интерфейс
+[tsyploff](https://github.com/tsyploff): реализация эвристических алгоритмов, частично пользовательский интерфейс
 
-KarpovaSofya: генерация отчёта для решения, генерация сравнительной таблицы
+[KarpovaSofya](https://github.com/KarpovaSofya): генерация отчёта для решения, генерация сравнительной таблицы
 
 ## Структура репозитория
 
-Постановка задачи: [>>>](https://github.com/tsyploff/rossiya-airlines/tree/master/спецификация%20задачи)
+Постановка задачи: [>>](https://github.com/tsyploff/rossiya-airlines/tree/master/спецификация%20задачи)
 
-Ссылка на отчёты о результатах эксперта и нашего алгоритма: [>>>](https://github.com/tsyploff/rossiya-airlines/tree/master/отчеты)
+Ссылка на отчёты о результатах эксперта и нашего алгоритма: [>>](https://github.com/tsyploff/rossiya-airlines/tree/master/отчеты)
