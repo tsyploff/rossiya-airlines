@@ -90,8 +90,8 @@ def night_percent(start, duration): # start и duration 'hh:mm'   - % от по�
     return (find_night_minuts(h1) + find_night_minuts(h2))/d0
 
 def is_night_flight(flight): # Является ли связка ночной
-    start = flight['Время вылета'].iloc[0]
-    duration = flight['Налет'].iloc[0]
+    start = flight['Время вылета']
+    duration = flight['Налет']
     n_pc = night_percent(start, duration)
     if n_pc > 0.5:
         return True
