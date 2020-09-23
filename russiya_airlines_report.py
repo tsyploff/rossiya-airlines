@@ -2,21 +2,12 @@ import os
 
 import numpy as np
 import pandas as pd
-
-from air_modules import *
-
-#вспомогательные функции
-
-def is_night_flight(flight): # Является ли связка ночной
-    start = flight['Время вылета'].iloc[0]
-    duration = flight['Налет'].iloc[0]
-    n_pc = night_percent(start, duration)
-    if n_pc > 0.5:
-        return True
-    else:
-        return False
-
-#основные функции
+from air_modules import*
+## Глобальная переменная
+numberOfCrue=pd.DataFrame({'group': [1,2,3,4,5,6],
+                           'ВВЛ': [125.54, 122.84, 129.97, 127.26, 123.32, 130.64],
+                          'МВЛ': [119.88, 117.30, 124.10, 121.51, 117.76, 124.75],
+                           'СНГ': [122.03, 119.41, 126.33, 123.69, 119.87, 126.99]})
 
 def table_round_trip(solution, data):
     '''Принимает на вход решение в виде pd.DataFrame, 
@@ -55,7 +46,7 @@ def table_round_trip(solution, data):
                     a[group-1, 7] += 1
     return pd.DataFrame(a, columns=['ВВЛ: БП','ВВЛ: Связки','МВЛ: БП','МВЛ: СВ','СНГ: БП','СНГ: Связки','Всего связок','Всего носных связок'])
 
-def table_flight_time(solution, data):
+def table_flight_time(solution, data, crew=numberOfCrue):
     '''Принимает на вход решение в виде pd.DataFrame, 
     возвращает табличку "планируемое время налёта"
     в виде pd.DataFrame
@@ -63,6 +54,7 @@ def table_flight_time(solution, data):
     <class 'pandas.core.frame.DataFrame'>
     '''
     a = np.array(['000:000']*6*6).reshape([6,6])
+    types = list(set(data['Тип связи']))
 
     for j in range(len(solution)):
         rout = solution.iloc[j].iloc[0]
@@ -76,7 +68,7 @@ def table_flight_time(solution, data):
             else:
                 d = t[t['День месяца']==i]
                 rout_type = d['Тип связи'].iloc[0]
-                dur = d['Налет'].iloc[0]
+                dur = in_hours(in_minuts(d['Налет'].iloc[0])*int(d['Экипаж'].iloc[0]))
                 flight_time = total_time(start, dur)
                 per = in_hours(in_minuts(dur)*night_percent(start,dur))
                 if rout_type == 'ВВЛ':
@@ -90,9 +82,17 @@ def table_flight_time(solution, data):
                     a[group-1, 4] = total_time(a[group-1, 4],dur)
                     a[group-1, 5] = total_time(a[group-1, 5],per)
     h = pd.DataFrame(a, columns=['ВВЛ: Планируемый налёт','ВВЛ: Планируемый ночной налёт','МВЛ: Планируемый налёт','МВЛ: Планируемый ночной налёт','СНГ: Планируемый налёт','СНГ: Планируемый ночной налёт'], index = range(1,7))
+    
+    for i in h.columns:
+        type_r = i[:3]
+        for j in range(1,7):
+            ideal_time = str(crew[crew['group']==j][type_r].iloc[0]).split('.')
+            ideal_time = ideal_time[0]+':'+ideal_time[1]
+            h[i].loc[j] = in_minuts(h[i].loc[j])/in_minuts(ideal_time)
+    
     delta = []
     for i in h:
-        delta += [in_hours(in_minuts(max(h[i])) - in_minuts(min(h[i])))]
+        delta += [max(h[i]) - min(h[i])]
     h.loc['delta'] = delta
     return h
 
@@ -238,4 +238,3 @@ def solution_report(solution, data):
         t3.to_excel(writer, sheet_name = 'Таблица 3')
         t4.to_excel(writer, sheet_name = 'Таблица 4')
         t5.to_excel(writer, sheet_name = 'Таблица 5')
-
